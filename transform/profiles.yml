@@ -1,0 +1,8 @@
+# Local connection settings. Phase 7 will add a "postgres" target with the same models.
+morocco_fx:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('FX_DUCKDB_PATH', '../data/fx_rates.duckdb') }}"
+      threads: 4

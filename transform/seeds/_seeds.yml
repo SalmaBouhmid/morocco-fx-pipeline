@@ -1,0 +1,21 @@
+version: 2
+
+seeds:
+  - name: basket_weights
+    description: >
+      Official weights of the dirham basket, copied by hand from Bank Al-Maghrib
+      (page "Historique du regime de change", read on 2026-11-06): since 2015-04-13,
+      EUR 60 % and USD 40 % (before: 80 % / 20 %, not loaded here).
+    columns:
+      - name: valid_from
+        data_tests: [not_null]
+      - name: currency
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, USD]
+      - name: weight
+        data_tests: [not_null, positive]
+      - name: source_url
+        data_tests: [not_null]

@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_rates
+    description: Typed and deduplicated BAM rates, one row per (rate_date, currency).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [rate_date, currency]
+    columns:
+      - name: rate_date
+        data_tests: [not_null]
+      - name: base_currency
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["MAD"]
+      - name: currency
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                # The 31 currencies BAM published between 1999-01-04 and 2026-11-05
+                # (checked on the real data). MRO was replaced by MRU in 2018.
+                values: [AED, AUD, BHD, BRL, CAD, CHF, CNY, DKK, DZD, EGP, EUR, GBP, GIP, INR,
+                         JOD, JPY, KWD, LYD, MRO, MRU, NOK, OMR, QAR, RUB, SAR, SEK, TND, TRY,
+                         USD, XOF, ZAR]
+      - name: rate
+        data_tests: [not_null, positive]
+      - name: mad_per_unit
+        data_tests: [not_null, positive]

@@ -1,0 +1,30 @@
+name: morocco_fx
+version: "1.0.0"
+config-version: 2
+profile: morocco_fx
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages", "logs"]
+
+models:
+  morocco_fx:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  morocco_fx:
+    +schema: reference
+    basket_weights:
+      +column_types:
+        valid_from: date
+        currency: varchar
+        weight: double precision
+        source_url: varchar

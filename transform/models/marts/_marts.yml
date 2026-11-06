@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: fct_daily_rates
+    description: Q1 - rate of the day per currency, with % change over 1 day, 1 week, 1 month.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [rate_date, currency]
+    columns:
+      - name: rate_date
+        data_tests: [not_null]
+      - name: currency
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_rates')
+                field: currency
+      - name: mad_per_unit
+        description: MAD for 1 unit of the currency (1 EUR = ... MAD).
+        data_tests: [not_null, positive]
+      - name: pct_change_1d
+        description: "% change vs the previous published day (empty on the first day)."
+      - name: pct_change_1w
+        description: "% change vs the last published day on or before 7 days ago."
+      - name: pct_change_1m
+        description: "% change vs the last published day on or before 1 month ago."
+
+  - name: fct_monthly_rates
+    description: Q3 - one row per (month, currency) with average, min, max and month-end rate.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [month_start, currency]
+    columns:
+      - name: month_start
+        data_tests: [not_null]
+      - name: currency
+        data_tests: [not_null]
+      - name: n_days
+        data_tests: [not_null, positive]
+      - name: avg_mad_per_unit
+        data_tests: [not_null, positive]
+      - name: close_mad_per_unit
+        data_tests: [not_null, positive]
+
+  - name: fct_volatility
+    description: Q2 - rolling 30-calendar-day volatility of daily log returns, in %.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [rate_date, currency]
+    columns:
+      - name: rate_date
+        data_tests: [not_null]
+      - name: currency
+        data_tests: [not_null]
+      - name: n_returns_30d
+        data_tests: [not_null]
+
+  - name: mad_basket_index
+    description: >
+      Q4 - illustrative reconstruction of the dirham against its official EUR/USD basket
+      (weights from Bank Al-Maghrib, see seed basket_weights). Base 100 on the first day
+      of each weight period. Not the official central rate.
+    columns:
+      - name: rate_date
+        data_tests: [not_null, unique]
+      - name: basket_index
+        data_tests: [not_null, positive]
