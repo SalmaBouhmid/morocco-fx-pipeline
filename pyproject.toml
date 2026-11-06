@@ -3,7 +3,7 @@ name = "morocco-fx-pipeline"
 version = "0.1.0"
 description = "Daily pipeline of Bank Al-Maghrib exchange rates (via the Frankfurter API)"
 requires-python = ">=3.10"
-dependencies = ["requests>=2.31"]
+dependencies = ["requests>=2.31", "duckdb>=1.0", "pandas>=2.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]

@@ -14,3 +14,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+
+# DuckDB file (versioned later, in phase 5)
+data/*.duckdb
+data/*.duckdb.wal
