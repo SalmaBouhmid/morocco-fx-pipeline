@@ -18,6 +18,9 @@ models:
     marts:
       +materialized: table
       +schema: marts
+    quality:
+      +materialized: table
+      +schema: quality
 
 seeds:
   morocco_fx:
@@ -28,3 +31,9 @@ seeds:
         currency: varchar
         weight: double precision
         source_url: varchar
+    ma_public_holidays:
+      +column_types:
+        holiday_date: date
+        holiday_name: varchar
+        is_estimated: boolean
+        source: varchar

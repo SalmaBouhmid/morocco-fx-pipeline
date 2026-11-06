@@ -3,3 +3,4 @@ duckdb>=1.0
 pandas>=2.0
 pytest>=8
 ruff>=0.5
+holidays>=0.50

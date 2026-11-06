@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: dq_calendar_gaps
+    description: Calendar days without any rate, with the most likely reason (Q5).
+    columns:
+      - name: calendar_date
+        data_tests: [not_null, unique]
+      - name: gap_reason
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [weekend, public_holiday, public_holiday_estimated, business_day_without_quote]
+
+  - name: dq_large_moves
+    description: Daily moves above 5 % for one currency (alerts, Q5).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [rate_date, currency]
+
+  - name: dq_currency_coverage
+    description: First and last date of each currency (why there are 31 currencies in total).
+    columns:
+      - name: currency
+        data_tests: [not_null, unique]
+      - name: coverage_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [active, discontinued]
+
+  - name: data_quality_report
+    description: One row per quality check with status ok / info / warn / error (Q5).
+    columns:
+      - name: check_name
+        data_tests: [not_null, unique]
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ok, info, warn, error]
