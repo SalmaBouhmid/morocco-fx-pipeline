@@ -1,0 +1,16 @@
+# Personal folder (interview notes) - never published
+pour_moi/
+
+# Secrets
+.env
+
+# Raw API answers (one file per call: too many for Git)
+data/raw/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/

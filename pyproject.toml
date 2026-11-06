@@ -1,0 +1,19 @@
+[project]
+name = "morocco-fx-pipeline"
+version = "0.1.0"
+description = "Daily pipeline of Bank Al-Maghrib exchange rates (via the Frankfurter API)"
+requires-python = ">=3.10"
+dependencies = ["requests>=2.31"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
