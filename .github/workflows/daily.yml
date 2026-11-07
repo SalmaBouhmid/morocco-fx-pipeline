@@ -1,0 +1,68 @@
+# Runs the pipeline every day in the cloud, for free, and saves the data on the
+# `data` branch (always ONE commit, rewritten each day: the repository does not grow).
+name: daily-pipeline
+
+on:
+  schedule:
+    - cron: "0 17 * * *"   # 17:00 UTC = 18:00 in Morocco (UTC+1)
+  workflow_dispatch:        # "Run workflow" button, for a manual run
+
+permissions:
+  contents: write           # needed to push the data branch
+
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FX_DUCKDB_PATH: ${{ github.workspace }}/data/fx_rates.duckdb
+      EXPORT_DIR: data/export
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dbt.txt
+
+      - name: Get yesterday's data from the data branch (if it exists)
+        run: |
+          mkdir -p "$EXPORT_DIR"
+          if git ls-remote --exit-code --heads origin data > /dev/null; then
+            git fetch --depth=1 origin data
+            git archive FETCH_HEAD | tar -x -C "$EXPORT_DIR"
+          else
+            echo "No data branch yet: this run will backfill from 1999."
+          fi
+
+      - name: Run the pipeline
+        run: bash scripts/daily_run.sh
+
+      - name: Publish the data branch (one commit, force-push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$EXPORT_DIR"
+          rm -rf .git
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "data: BAM rates, run of $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
+
+      - name: Keep the raw API answers for 30 days (debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-api-answers
+          path: data/raw/
+          retention-days: 30
+          if-no-files-found: ignore

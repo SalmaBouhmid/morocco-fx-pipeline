@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -27,7 +28,12 @@ import requests
 
 from morocco_fx import extract
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "fx_rates.duckdb"
+# Same variable as in transform/profiles.yml, so Python and dbt use the same file.
+DB_PATH = Path(
+    os.environ.get(
+        "FX_DUCKDB_PATH", Path(__file__).resolve().parent.parent / "data" / "fx_rates.duckdb"
+    )
+)
 
 logger = logging.getLogger("morocco_fx.load")
 

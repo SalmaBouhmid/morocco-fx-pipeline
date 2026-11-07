@@ -24,3 +24,6 @@ transform/target/
 transform/dbt_packages/
 transform/logs/
 transform/.user.yml
+
+# Parquet export (published on the "data" branch by GitHub Actions, not on main)
+data/export/
