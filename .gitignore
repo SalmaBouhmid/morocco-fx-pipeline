@@ -27,3 +27,6 @@ transform/.user.yml
 
 # Parquet export (published on the "data" branch by GitHub Actions, not on main)
 data/export/
+
+# Claude Code local settings (preview launcher)
+.claude/
