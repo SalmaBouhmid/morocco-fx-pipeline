@@ -52,6 +52,25 @@ Chaque jour, **GitHub Actions** (gratuit, sans serveur) :
 
 Le dashboard lit ces fichiers Parquet directement sur GitHub.
 
+## Mode « entreprise » : Airflow + PostgreSQL sous Docker
+
+Le **même code** tourne aussi comme dans une entreprise : **Airflow** planifie le pipeline chaque jour à 17:00 UTC et
+les données vont dans **PostgreSQL**. Le DAG `morocco_fx_daily` enchaîne 3 tâches, `extract → load → dbt_build`, avec
+2 nouvelles tentatives (5 minutes d'écart) si une tâche échoue.
+
+```bash
+cp .env.example .env              # puis choisir un mot de passe dans .env (jamais commité)
+docker compose up -d --build      # PostgreSQL + Airflow
+```
+
+Interface Airflow : http://localhost:8080 · PostgreSQL depuis Windows : `localhost:5433` (base `fx`).
+
+Résultat du premier lancement (10/11/2026) : 137 702 lignes chargées depuis 1999, puis les mêmes modèles dbt que sur
+DuckDB, avec le même résultat (61 tests : 60 réussis, 1 alerte sur les variations > 5 %). Un deuxième lancement n'a
+ajouté aucun doublon.
+
+![Airflow](docs/airflow_dag.png)
+
 ## Points d'ingénierie
 
 - **Incrémental** : seuls les jours manquants sont demandés à l'API.
@@ -64,17 +83,24 @@ Le dashboard lit ces fichiers Parquet directement sur GitHub.
     inexpliqué ;
   - une variation de plus de 5 % en un jour déclenche une alerte ;
   - un retard de publication de plus de 7 jours bloque le pipeline.
-- **Testé** : 46 tests pytest (sans réseau : réponses de l'API simulées) et 61 tests dbt ; ruff et CI à chaque push.
+- **Testé** : 46 tests pytest (sans réseau : réponses de l'API simulées), 2 tests sur PostgreSQL (dans le conteneur)
+  et 61 tests dbt ; ruff et CI à chaque push.
+- **Portable** : les mêmes modèles dbt tournent sur DuckDB (cloud) et sur PostgreSQL (entreprise).
 
 ## Stack
 
-Python (requests, pandas) · DuckDB · dbt (dbt-duckdb) · Parquet · GitHub Actions · Streamlit + Plotly
+Python (requests, pandas) · DuckDB · PostgreSQL · dbt (dbt-duckdb, dbt-postgres) · Airflow · Docker Compose ·
+Parquet · GitHub Actions · Streamlit + Plotly
 
 ## Structure
 
 ```
 morocco_fx/        extract.py (API + retries) · load.py (watermark, upsert, backfill)
+                   load_postgres.py (même chargement vers PostgreSQL)
                    quality.py (porte qualité) · state.py (sauvegarde / restauration Parquet)
+airflow/dags/      morocco_fx_daily.py (DAG : extract → load → dbt_build)
+docker/            image Airflow (+ dbt-postgres) · script de création des bases
+docker-compose.yml PostgreSQL + Airflow
 transform/         projet dbt : models/staging, models/marts, models/quality, seeds, tests
 dashboard/         app.py (Streamlit) · fx_data.py (lecture des données, testée)
 scripts/           daily_run.sh (les étapes du pipeline) · build_holiday_seed.py
@@ -117,7 +143,7 @@ Les jours suivants, `python -m morocco_fx.load update` ne charge que les jours m
 - [x] Contrôles qualité et rapport
 - [x] Exécution quotidienne par GitHub Actions
 - [x] Dashboard Streamlit en ligne
-- [ ] Mode « entreprise » : Docker Compose avec Airflow et PostgreSQL (même code, dbt-postgres)
+- [x] Mode « entreprise » : Docker Compose avec Airflow et PostgreSQL (même code, dbt-postgres)
 
 ---
 

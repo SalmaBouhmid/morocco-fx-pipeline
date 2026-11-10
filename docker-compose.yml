@@ -1,0 +1,49 @@
+# "Company" mode: PostgreSQL + Airflow, running the same pipeline code as GitHub Actions.
+#   docker compose up -d --build    then open http://localhost:8080
+# The password comes from the .env file (copy .env.example to .env).
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: fx
+      POSTGRES_PASSWORD: ${FX_PG_PASSWORD:?Copy .env.example to .env and set FX_PG_PASSWORD}
+      POSTGRES_DB: fx
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5433:5432"   # from Windows: localhost:5433 (5432 is often taken)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fx -d fx"]
+      interval: 5s
+      retries: 20
+
+  airflow:
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
+    command: standalone   # web UI + scheduler in one container: enough on a laptop
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fx:${FX_PG_PASSWORD}@postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/project/airflow/dags
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"   # local only: no login screen
+      PYTHONPATH: /opt/project
+      FX_PG_HOST: postgres
+      FX_PG_PORT: "5432"
+      FX_PG_USER: fx
+      FX_PG_PASSWORD: ${FX_PG_PASSWORD}
+      FX_PG_DB: fx
+      FX_RAW_SCHEMA: raw
+      DBT_TARGET: postgres
+    volumes:
+      - ./:/opt/project   # the project code, the DAG and data/raw
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

@@ -52,6 +52,24 @@ Every day, **GitHub Actions** (free, no server):
 
 The dashboard reads these Parquet files directly from GitHub.
 
+## "Company" mode: Airflow + PostgreSQL in Docker
+
+The **same code** also runs the way a company would run it: **Airflow** schedules the pipeline every day at 17:00 UTC
+and the data goes into **PostgreSQL**. The DAG `morocco_fx_daily` chains 3 tasks, `extract → load → dbt_build`, with
+2 retries (5 minutes apart) when a task fails.
+
+```bash
+cp .env.example .env              # then choose a password in .env (never committed)
+docker compose up -d --build      # PostgreSQL + Airflow
+```
+
+Airflow UI: http://localhost:8080 · PostgreSQL from the host: `localhost:5433` (database `fx`).
+
+First run (2026-11-10): 137,702 rows loaded since 1999, then the same dbt models as on DuckDB, with the same result
+(61 tests: 60 passed, 1 warning on moves > 5 %). A second run added no duplicate.
+
+![Airflow](docs/airflow_dag.png)
+
 ## Engineering points
 
 - **Incremental**: only the missing days are requested from the API.
@@ -64,17 +82,24 @@ The dashboard reads these Parquet files directly from GitHub.
     unexplained business day;
   - a daily move above 5 % raises an alert;
   - a publication delay above 7 days blocks the pipeline.
-- **Tested**: 46 pytest tests (no network: simulated API answers) and 61 dbt tests; ruff and CI on every push.
+- **Tested**: 46 pytest tests (no network: simulated API answers), 2 tests on PostgreSQL (in the container) and
+  61 dbt tests; ruff and CI on every push.
+- **Portable**: the same dbt models run on DuckDB (cloud) and PostgreSQL (company).
 
 ## Stack
 
-Python (requests, pandas) · DuckDB · dbt (dbt-duckdb) · Parquet · GitHub Actions · Streamlit + Plotly
+Python (requests, pandas) · DuckDB · PostgreSQL · dbt (dbt-duckdb, dbt-postgres) · Airflow · Docker Compose ·
+Parquet · GitHub Actions · Streamlit + Plotly
 
 ## Layout
 
 ```
 morocco_fx/        extract.py (API + retries) · load.py (watermark, upsert, backfill)
+                   load_postgres.py (same load into PostgreSQL)
                    quality.py (quality gate) · state.py (Parquet save / restore)
+airflow/dags/      morocco_fx_daily.py (DAG: extract → load → dbt_build)
+docker/            Airflow image (+ dbt-postgres) · database creation script
+docker-compose.yml PostgreSQL + Airflow
 transform/         dbt project: models/staging, models/marts, models/quality, seeds, tests
 dashboard/         app.py (Streamlit) · fx_data.py (data access, tested)
 scripts/           daily_run.sh (pipeline steps) · build_holiday_seed.py
@@ -116,7 +141,7 @@ On the following days, `python -m morocco_fx.load update` loads only the missing
 - [x] Data quality checks and report
 - [x] Daily run with GitHub Actions
 - [x] Streamlit dashboard online
-- [ ] "Company" mode: Docker Compose with Airflow and PostgreSQL (same code, dbt-postgres)
+- [x] "Company" mode: Docker Compose with Airflow and PostgreSQL (same code, dbt-postgres)
 
 ---
 

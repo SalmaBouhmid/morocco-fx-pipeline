@@ -73,16 +73,22 @@ def get_watermark(con: duckdb.DuckDBPyConnection) -> date | None:
     return con.execute("SELECT max(rate_date) FROM rates").fetchone()[0]
 
 
-def upsert_rates(con: duckdb.DuckDBPyConnection, rows: list[dict[str, Any]]) -> int:
-    """Upsert API rows into the rates table. Returns the number of rows sent.
+def prepare_rows(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    """Validate API rows and keep the ones to load (shared by DuckDB and PostgreSQL).
 
     The API also returns the line MAD -> MAD = 1.0 every day: it is not an exchange
-    rate, so we skip it.
+    rate, so we skip it. The same (date, currency) twice is refused.
     """
     incoming = pd.DataFrame(extract.validate_rates(rows), columns=["date", "base", "quote", "rate"])
-    incoming = incoming[incoming["quote"] != incoming["base"]]
+    incoming = incoming[incoming["quote"] != incoming["base"]].reset_index(drop=True)
     if incoming.duplicated(["date", "quote"]).any():
         raise extract.ExtractError("API answer contains the same (date, currency) twice")
+    return incoming
+
+
+def upsert_rates(con: duckdb.DuckDBPyConnection, rows: list[dict[str, Any]]) -> int:
+    """Upsert API rows into the rates table. Returns the number of rows sent."""
+    incoming = prepare_rows(rows)
     con.execute("BEGIN TRANSACTION")
     try:
         con.register("incoming", incoming)

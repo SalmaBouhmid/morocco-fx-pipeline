@@ -1,8 +1,20 @@
-# Local connection settings. Phase 7 will add a "postgres" target with the same models.
+# Connection settings. Same models, two databases:
+#   duckdb   (default): one local file, used by GitHub Actions and on a laptop
+#   postgres          : the "company" mode, run by Airflow in Docker (docker-compose.yml)
+# Passwords come from environment variables (.env file), never from Git.
 morocco_fx:
-  target: duckdb
+  target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
   outputs:
     duckdb:
       type: duckdb
       path: "{{ env_var('FX_DUCKDB_PATH', '../data/fx_rates.duckdb') }}"
+      threads: 4
+    postgres:
+      type: postgres
+      host: "{{ env_var('FX_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('FX_PG_PORT', '5432') | int }}"
+      user: "{{ env_var('FX_PG_USER', 'fx') }}"
+      password: "{{ env_var('FX_PG_PASSWORD', '') }}"
+      dbname: "{{ env_var('FX_PG_DB', 'fx') }}"
+      schema: public
       threads: 4
