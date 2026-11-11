@@ -1,5 +1,9 @@
-# Personal folder (interview notes) - never published
+# Personal folder
 pour_moi/
+
+# Local working notes
+CLAUDE.md
+CAHIER_DES_CHARGES.md
 
 # Secrets
 .env
@@ -15,7 +19,7 @@ __pycache__/
 .venv/
 venv/
 
-# DuckDB file (versioned later, in phase 5)
+# DuckDB file
 data/*.duckdb
 data/*.duckdb.wal
 
@@ -28,5 +32,5 @@ transform/.user.yml
 # Parquet export (published on the "data" branch by GitHub Actions, not on main)
 data/export/
 
-# Claude Code local settings (preview launcher)
+# Local editor settings
 .claude/
